@@ -1,0 +1,38 @@
+name: Ozon Daily Closed Loop
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 22 * * *'
+      timezone: 'Asia/Shanghai'
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install -e .
+
+      - name: Initialize database
+        run: python -m ozon_ai_operator.cli init-db
+
+      - name: Score current database
+        run: python -m ozon_ai_operator.cli score --limit 1000
+
+      - name: Generate daily report
+        run: python -m ozon_ai_operator.cli report --out data/daily_report.md
+
+      - name: Save report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ozon-daily-report
+          path: data/daily_report.md
