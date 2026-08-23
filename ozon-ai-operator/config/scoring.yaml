@@ -1,0 +1,14 @@
+weights:
+  sales_growth: 20
+  search_growth: 15
+  cart_growth: 15
+  competition: 10
+  age: 10
+  profit: 15
+  logistics: 5
+  supply: 5
+  risk: 5
+thresholds:
+  a: 80
+  b: 70
+  watch: 60

@@ -1,0 +1,11 @@
+hard_reject:
+  requires_certification: true
+  brand_risk_high: true
+  restricted_category: true
+  dangerous_goods: true
+  sku_count_gt: 5
+soft_penalties:
+  fragile: 1
+  battery: 2
+  return_risk_high: 3
+  compatibility_complex: 2

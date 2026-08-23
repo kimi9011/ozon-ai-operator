@@ -1,0 +1,19 @@
+daily_target: 20
+buckets:
+  trend_new: 5
+  growth_30_90: 8
+  mature: 4
+  seasonal: 3
+exploration_share: 0.20
+min_margin: 0.20
+preferred_margin: 0.30
+scale:
+  min_orders_15d: 5
+  min_margin: 0.25
+  max_return_rate: 0.10
+  min_score: 75
+lifecycle:
+  low_visibility_impressions_7d: 100
+  low_ctr_multiplier: 0.65
+  low_cart_multiplier: 0.65
+  low_cvr_multiplier: 0.65
