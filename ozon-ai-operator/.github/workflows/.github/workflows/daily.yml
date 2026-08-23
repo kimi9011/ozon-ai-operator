@@ -1,38 +1,39 @@
-name: Ozon Daily Closed Loop
+name: 臭氧每日闭环
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '17 22 * * *'
-      timezone: 'Asia/Shanghai'
 
 jobs:
   daily:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
+    defaults:
+      run:
+        working-directory: 臭氧人工智能操作员
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 下载项目
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: 安装 Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
-      - run: pip install -e .
+      - name: 安装程序
+        run: pip install -e .
 
-      - name: Initialize database
+      - name: 初始化数据库
         run: python -m ozon_ai_operator.cli init-db
 
-      - name: Score current database
+      - name: 商品评分
         run: python -m ozon_ai_operator.cli score --limit 1000
 
-      - name: Generate daily report
+      - name: 生成日报
         run: python -m ozon_ai_operator.cli report --out data/daily_report.md
 
-      - name: Save report artifact
+      - name: 保存日报
         uses: actions/upload-artifact@v4
         with:
           name: ozon-daily-report
-          path: data/daily_report.md
+          path: 臭氧人工智能操作员/data/daily_report.md
