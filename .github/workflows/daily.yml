@@ -7,10 +7,6 @@ jobs:
   daily:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: 臭氧人工智能操作员
-
     steps:
       - name: 下载项目
         uses: actions/checkout@v4
@@ -20,20 +16,33 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: 安装程序
-        run: pip install -e .
+      - name: 查找并安装程序
+        run: |
+          PROJECT_DIR=$(dirname "$(find . -name pyproject.toml -print -quit)")
+          echo "找到项目目录: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          pip install -e .
 
       - name: 初始化数据库
-        run: python -m ozon_ai_operator.cli init-db
+        run: |
+          PROJECT_DIR=$(dirname "$(find . -name pyproject.toml -print -quit)")
+          cd "$PROJECT_DIR"
+          python -m ozon_ai_operator.cli init-db
 
       - name: 商品评分
-        run: python -m ozon_ai_operator.cli score --limit 1000
+        run: |
+          PROJECT_DIR=$(dirname "$(find . -name pyproject.toml -print -quit)")
+          cd "$PROJECT_DIR"
+          python -m ozon_ai_operator.cli score --limit 1000
 
       - name: 生成日报
-        run: python -m ozon_ai_operator.cli report --out data/daily_report.md
+        run: |
+          PROJECT_DIR=$(dirname "$(find . -name pyproject.toml -print -quit)")
+          cd "$PROJECT_DIR"
+          python -m ozon_ai_operator.cli report --out data/daily_report.md
 
       - name: 保存日报
         uses: actions/upload-artifact@v4
         with:
           name: ozon-daily-report
-          path: 臭氧人工智能操作员/data/daily_report.md
+          path: "**/data/daily_report.md"
