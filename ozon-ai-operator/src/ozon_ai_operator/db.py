@@ -4,7 +4,27 @@ from sqlalchemy import create_engine, String, Integer, Float, Boolean, DateTime,
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from .config import database_url
 
-class Base(DeclarativeBase): pass
+DEFAULT_STORE_ID = "default"
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Store(Base):
+    """Logical Ozon shop/account managed by the operator.
+
+    Secrets are intentionally not stored here. API credentials belong in
+    environment variables / GitHub Secrets and are resolved by store_id.
+    """
+
+    __tablename__ = "stores"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    store_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(160), default="Default store")
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 
 class Product(Base):
     __tablename__ = "products"
@@ -27,6 +47,7 @@ class Product(Base):
     return_risk_high: Mapped[bool] = mapped_column(Boolean, default=False)
     compatibility_complex: Mapped[bool] = mapped_column(Boolean, default=False)
 
+
 class MarketSnapshot(Base):
     __tablename__ = "market_snapshots"
     __table_args__ = (UniqueConstraint("date", "product_id"),)
@@ -40,11 +61,13 @@ class MarketSnapshot(Base):
     lowest_price: Mapped[float] = mapped_column(Float, default=0)
     median_price: Mapped[float] = mapped_column(Float, default=0)
 
+
 class StoreMetric(Base):
     __tablename__ = "store_daily_metrics"
-    __table_args__ = (UniqueConstraint("date", "offer_id"),)
+    __table_args__ = (UniqueConstraint("date", "store_id", "offer_id"),)
     id: Mapped[int] = mapped_column(primary_key=True)
     date: Mapped[datetime] = mapped_column(DateTime, index=True)
+    store_id: Mapped[str] = mapped_column(String(80), default=DEFAULT_STORE_ID, index=True)
     offer_id: Mapped[str] = mapped_column(String(120), index=True)
     impressions: Mapped[float] = mapped_column(Float, default=0)
     clicks: Mapped[float] = mapped_column(Float, default=0)
@@ -54,6 +77,7 @@ class StoreMetric(Base):
     returns: Mapped[float] = mapped_column(Float, default=0)
     price: Mapped[float] = mapped_column(Float, default=0)
     stock: Mapped[float] = mapped_column(Float, default=0)
+
 
 class Candidate(Base):
     __tablename__ = "candidates"
@@ -67,22 +91,29 @@ class Candidate(Base):
     status: Mapped[str] = mapped_column(String(30), default="NEW")
     reasons: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+
 class Lifecycle(Base):
     __tablename__ = "product_lifecycle"
+    __table_args__ = (UniqueConstraint("store_id", "offer_id"),)
     id: Mapped[int] = mapped_column(primary_key=True)
-    offer_id: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    store_id: Mapped[str] = mapped_column(String(80), default=DEFAULT_STORE_ID, index=True)
+    offer_id: Mapped[str] = mapped_column(String(120), index=True)
     status: Mapped[str] = mapped_column(String(30), default="TESTING")
     last_decision_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
 
 class StrategyHistory(Base):
     __tablename__ = "strategy_history"
     id: Mapped[int] = mapped_column(primary_key=True)
     date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    store_id: Mapped[str] = mapped_column(String(80), default=DEFAULT_STORE_ID, index=True)
     payload: Mapped[str] = mapped_column(Text)
+
 
 engine = create_engine(database_url(), future=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+
 
 def init_db():
     Base.metadata.create_all(engine)
