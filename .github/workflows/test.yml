@@ -1,0 +1,45 @@
+name: Ozon AI Operator Tests
+
+on:
+  push:
+    paths:
+      - 'ozon-ai-operator/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    paths:
+      - 'ozon-ai-operator/**'
+      - '.github/workflows/test.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ozon-ai-operator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: pip install -e . pytest
+      - name: Unit tests
+        run: pytest -q
+      - name: CLI smoke test
+        env:
+          DATABASE_URL: sqlite:///./data/ci-smoke.db
+        run: |
+          rm -f data/ci-smoke.db
+          python -m ozon_ai_operator.cli init-db
+          python -m ozon_ai_operator.cli import products data/sample/products.csv
+          python -m ozon_ai_operator.cli import market data/sample/market.csv
+          python -m ozon_ai_operator.cli import store data/sample/store.csv
+          python -m ozon_ai_operator.cli score --limit 50
+          python -m ozon_ai_operator.cli report --out data/ci-report.md
+          test -s data/ci-report.md
+      - name: Upload smoke report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ozon-ci-report
+          path: ozon-ai-operator/data/ci-report.md
