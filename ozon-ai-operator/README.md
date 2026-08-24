@@ -15,6 +15,19 @@
 - V9 Streamlit Dashboard
 - V10 Logistic Regression 成功率预测基线，可替换 LightGBM/XGBoost
 
+## 多店铺模式
+
+系统现在支持同一套 Ozon AI Operator 管理多个 Ozon 店铺。
+
+- `store_daily_metrics` 使用 `date + store_id + offer_id` 隔离数据。
+- `product_lifecycle` 使用 `store_id + offer_id` 隔离生命周期状态。
+- `strategy_history` 带 `store_id`，便于生成单店与总店策略历史。
+- 旧版 `store.csv` 没有 `store_id` 仍可导入，自动归入 `default` 店铺。
+- 新版导出建议增加 `store_id` 列，例如 `shop_ru_01`、`shop_ru_02`。
+- API 密钥不写入数据库；生产环境按 `store_id` 从环境变量或 Secrets 解析。
+
+> 如果本地已经用旧数据库结构创建过 SQLite 数据库，`create_all()` 不会自动修改旧表。开发测试阶段建议备份后重新建库；正式生产迁移会使用数据库 migration，而不是直接删库。
+
 ## 5分钟本地测试
 
 ```bash
@@ -27,6 +40,8 @@ streamlit run src/ozon_ai_operator/dashboard/app.py
 
 Windows PowerShell 可逐条执行 demo.sh 中的命令。
 
+GitHub 已配置 CI：每次修改核心项目代码会运行单元测试，并用仓库自带样例数据执行完整 CLI smoke test：初始化数据库 → 导入 products/market/store → 评分 → 生成日报。
+
 ## 导入你自己的数据
 
 ### products.csv
@@ -38,6 +53,16 @@ Windows PowerShell 可逐条执行 demo.sh 中的命令。
 
 ### store.csv
 必需：`date,offer_id,impressions,clicks,cart_additions,orders,revenue,returns,price,stock`
+
+多店铺推荐额外增加：`store_id`。
+
+示例：
+
+```csv
+store_id,date,offer_id,impressions,clicks,cart_additions,orders,revenue,returns,price,stock
+shop_ru_01,2026-08-24,SKU-001,1000,80,12,5,7500,0,1500,18
+shop_ru_02,2026-08-24,SKU-001,600,55,9,4,6000,0,1500,11
+```
 
 导入：
 ```bash
@@ -55,6 +80,8 @@ ozon-ai report --out data/daily_report.md
 - `OZON_API_KEY`
 - `OPENAI_API_KEY`（可选）
 - `DATABASE_URL`（使用外部 PostgreSQL 时）
+
+多店铺生产版会进一步支持按店铺命名的凭据，例如 `OZON_SHOP_RU_01_CLIENT_ID` / `OZON_SHOP_RU_01_API_KEY`，避免不同店铺混用密钥。
 
 ## Ozon API 接入说明
 `src/ozon_ai_operator/collector/ozon_api.py` 已提供认证、重试、错误处理和可配置端点调用器。Ozon 的具体接口路径、版本与账户权限可能变化，所以本项目不把未经你账户验证的写接口硬编码为“自动发布”。请把当前官方文档中的接口路径配置成环境变量，并先在测试商品上验证。
